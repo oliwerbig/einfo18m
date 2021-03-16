@@ -1,10 +1,11 @@
 #pragma once
+#include "TimeSpan.h"
 #include <vector>
 class Event;
 class Entity
 {
 protected:
-	int id;
+	int id = 0;
 	std::vector<Event*> events;
 public:
     int getId() { return id; }

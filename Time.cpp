@@ -13,12 +13,12 @@ Time::Time(int timeInMinutes)
 
 int Time::getHour()
 {
-    return timeInMinutes / 60;
+    return getTimeInMinutes() / 60;
 }
 
 int Time::getMinute()
 {
-    return timeInMinutes % 60;
+    return getTimeInMinutes() % 60;
 }
 
 void Time::setTime(int hour, int minute)

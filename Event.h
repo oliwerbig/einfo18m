@@ -1,21 +1,20 @@
 #pragma once
 #include "Direction.h"
+#include "Time.h"
 #include <string>
 class TimeStamp;
 class Entity;
 class Event
+    : public Time
 {
 protected:
-    TimeStamp* timeStamp;
-	Entity* entity;
-	Direction direction;
+	int entityId = 0;
+	Direction direction = In;
 public:
     Event();
     Event(std::string payload);
-    TimeStamp* getTimeStamp() { return timeStamp; }
-    void setTimeStamp(TimeStamp* timeStamp) { this->timeStamp = timeStamp; }
-    Entity* getEntity() { return entity; }
-    void setEntity(Entity* entity) { this->entity = entity; }
+    int getEntityId() { return entityId; }
+    void setEntityId(int entityId) { this->entityId = entityId; }
     Direction getDirection() { return direction; }
     void setDirection(Direction direction) { this->direction = direction; }
     std::string getDirectionAsString();

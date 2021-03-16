@@ -45,7 +45,7 @@ void Event::parsePayload(std::string payload)
         values.push_back(item);
     }
 
-    getTimeStamp()->setTime(stoi(values[0]), stoi(values[1]));
-    getEntity()->setId(stoi(values[2]));
+    setTime(stoi(values[0]), stoi(values[1]));
+    setEntityId(stoi(values[2]));
     setDirectionFromString(values[3]);
 }

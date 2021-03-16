@@ -11,12 +11,12 @@ TimeSpan TimeStamp::calculateTimeElapsed(TimeStamp* otherTimeStamp)
 
 void TimeStamp::addEntityInside(Entity* entity)
 {
-    getEntitiesInside()[entity->getId()] = entity;
+    entitiesInside[entity->getId()] = entity;
 }
 
 void TimeStamp::removeEntityInside(Entity* entity)
 {
-    getEntitiesInside().erase(entity->getId());
+    entitiesInside.erase(entity->getId());
 }
 
 int TimeStamp::getNumOfEntitiesInside()
@@ -26,7 +26,7 @@ int TimeStamp::getNumOfEntitiesInside()
 
 void TimeStamp::addEvent(Event* event)
 {
-    getEvents().push_back(event);
+    events.push_back(event);
 }
 
 int TimeStamp::getNumOfEvents()

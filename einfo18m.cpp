@@ -9,12 +9,96 @@
 #include "Direction.h"
 #include <iostream>
 #include <fstream>
+#include <vector>
+#include <map>
 
 using namespace std;
 
 vector<Event> events;
 map<int, Entity> entities;
 map<int, TimeStamp> timeStamps;
+
+void processFile();
+Entity findEntityFirstIn();
+Entity findEntityLastOut();
+void writeEntityAndNumOfEventsToFile();
+map<int, Entity*> findEntitiesStillIn();
+TimeStamp findTimeStampWithMostEntitiesIn();
+TimeSpan calculateTotalTimeInOfEntity(Entity* entity);
+
+int main()
+{
+    setlocale(LC_ALL, "hun");
+
+    // 1.
+    processFile();
+
+    // 2.
+    cout << endl;
+    cout << "2. feladat" << endl;
+    cout << "Az elsõ belépõ: " << findEntityFirstIn().getId() << endl;
+    cout << "Az utolsó kilépõ: " << findEntityLastOut().getId() << endl;
+
+    // 3.
+    writeEntityAndNumOfEventsToFile();
+
+    // 4.
+    cout << endl;
+    cout << "4. feladat" << endl;
+    cout << "A végén a társalgóban voltak: ";
+    map<int, Entity*> entitiesStillIn = findEntitiesStillIn();
+    for (pair<int, Entity*> entity : entitiesStillIn)
+    {
+        cout << entity.second->getId() << " ";
+    }
+    cout << endl;
+
+    // 5.
+    cout << endl;
+    cout << findTimeStampWithMostEntitiesIn().getTimeAsString() + "-kor voltak a legtöbben a társalgóban." << endl;
+
+    // 6.
+    cout << endl;
+    cout << "6. feladat" << endl;
+    cout << "Adja meg a személy azonosítóját! ";
+    int input;
+    cin >> input;
+
+    // 7.
+    /// for (Event* event : entities[input].getEvents()) // Valahol anomália van, a biztonság kedvéért máshogy csinálom
+    cout << endl;
+    cout << "7. feladat" << endl;
+    for (Event event : events)
+    {
+        if (event.getEntityId() == input)
+        {
+            if (event.getDirection() == In)
+            {
+                cout << event.getTimeAsString() << "-";
+            }
+            else if (event.getDirection() == Out)
+            {
+                cout << event.getTimeAsString() << endl;
+            }
+        }
+    }
+    cout << endl;
+
+    // 8.
+    cout << endl;
+    cout << "8. feladat" << endl;
+    TimeSpan totalTimeInOfEntity = calculateTotalTimeInOfEntity(&entities[input]);
+    if (entitiesStillIn.find(input) == entitiesStillIn.end())
+    {
+        cout << "A(z) " << input << "-es személy összesen " << totalTimeInOfEntity.getTimeInMinutes() << " percet volt bent, a megfigyelés végén nem volt a társalgóban." << endl;
+    }
+    else
+    {
+        cout << "A(z) " << input << "-es személy összesen " << totalTimeInOfEntity.getTimeInMinutes() << " percet volt bent, a megfigyelés végén a társalgóban volt." << endl;
+    }
+
+    return 0;
+}
 
 void processFile()
 {
@@ -26,46 +110,137 @@ void processFile()
         Event event(line);
         events.push_back(event);
 
-        if (entities.find(event.getEntity()->getId()) == entities.end())
+        if (entities.find(event.getEntityId()) == entities.end())
         {
-            entities[event.getEntity()->getId()] = *event.getEntity();
+            Entity entity;
+            entity.setId(event.getEntityId());
+            entities[event.getEntityId()] = entity;
         }
 
-        if (timeStamps.find(event.getTimeStamp()->getTimeInMinutes()) == timeStamps.end())
+        if (timeStamps.find(event.getTimeInMinutes()) == timeStamps.end())
         {
-            timeStamps[event.getTimeStamp()->getTimeInMinutes()] = *event.getTimeStamp();
+            TimeStamp timeStamp(event.getTimeInMinutes());
+            timeStamps[event.getTimeInMinutes()] = timeStamp;
         }
 
-        entities[event.getEntity()->getId()].addEvent(&events.back());
-        timeStamps[event.getTimeStamp()->getTimeInMinutes()].addEvent(&events.back());
+        entities[event.getEntityId()].addEvent(&events.back());
+        timeStamps[event.getTimeInMinutes()].addEvent(&events.back());
 
-        if (event.getDirection() == In)
+        for (Event e : events)
         {
-            timeStamps[event.getTimeStamp()->getTimeInMinutes()].addEntityInside(&entities[event.getEntity()->getId()]);
-        }
-        else if (event.getDirection() == Out)
-        {
-            timeStamps[event.getTimeStamp()->getTimeInMinutes()].removeEntityInside(&entities[event.getEntity()->getId()]);
+            if (e.getDirection() == In)
+            {
+                timeStamps[event.getTimeInMinutes()].addEntityInside(&entities[e.getEntityId()]);
+            }
+            else if (e.getDirection() == Out)
+            {
+                timeStamps[event.getTimeInMinutes()].removeEntityInside(&entities[e.getEntityId()]);
+            }
         }
     }
     inputFile.close();
 }
 
-int main()
+Entity findEntityFirstIn()
 {
-    processFile();
-    cout << events[3].getTimeStamp()->getHour() << endl;
-    return 0;
+    Entity entityFirstIn;
+    for (Event event : events)
+    {
+        if (event.getDirection() == In)
+        {
+            entityFirstIn = entities[event.getEntityId()];
+            break;
+        }
+    }
+
+    return entityFirstIn;
 }
 
+Entity findEntityLastOut()
+{
+    Entity entityLastOut;
+    for (Event event : events)
+    {
+        if (event.getDirection() == Out)
+        {
+            entityLastOut = entities[event.getEntityId()];
+        }
+    }
 
-// Run program: Ctrl + F5 or Debug > Start Without Debugging menu
-// Debug program: F5 or Debug > Start Debugging menu
+    return entityLastOut;
+}
 
-// Tips for Getting Started: 
-//   1. Use the Solution Explorer window to add/manage files
-//   2. Use the Team Explorer window to connect to source control
-//   3. Use the Output window to see build output and other messages
-//   4. Use the Error List window to view errors
-//   5. Go to Project > Add New Item to create new code files, or Project > Add Existing Item to add existing code files to the project
-//   6. In the future, to open this project again, go to File > Open > Project and select the .sln file
+void writeEntityAndNumOfEventsToFile()
+{
+    ofstream outputFile;
+    outputFile.open("athaladas.txt");
+    for (pair<int, Entity> entity : entities)
+    {
+        outputFile << entity.first << " " << entity.second.getNumOfEvents() << endl;
+    }
+    outputFile.close();
+}
+
+map<int, Entity*> findEntitiesStillIn()
+{
+    map<int, Entity*> entitiesStillIn;
+    TimeStamp lastTimeStamp;
+
+    for (pair<int, TimeStamp> timeStamp : timeStamps)
+    {
+        if (timeStamp.second.getTimeInMinutes() > lastTimeStamp.getTimeInMinutes())
+        {
+            entitiesStillIn = timeStamp.second.getEntitiesInside();
+        }
+    }
+
+    return entitiesStillIn;
+}
+
+TimeStamp findTimeStampWithMostEntitiesIn()
+{
+    TimeStamp timeStampWithMostEntitiesIn;
+    for (pair<int, TimeStamp> timeStamp : timeStamps)
+    {
+        if (timeStamp.second.getNumOfEntitiesInside() > timeStampWithMostEntitiesIn.getNumOfEntitiesInside())
+        {
+            timeStampWithMostEntitiesIn = timeStamps[timeStamp.second.getTimeInMinutes()];
+        }
+    }
+
+    return timeStampWithMostEntitiesIn;
+}
+
+TimeSpan calculateTotalTimeInOfEntity(Entity* entity) //Itt is valami nem mûködött jól, ezért hanyagoltam az OO megoldást
+{
+    TimeSpan totalTimeIn;
+
+    std::vector<Event> in;
+    std::vector<Event> out;
+    for (Event event : events)
+    {
+        if(event.getEntityId() == entity->getId())
+        if (event.getDirection() == In)
+        {
+            in.push_back(event);
+        }
+        else if (event.getDirection() == Out)
+        {
+            out.push_back(event);
+        }
+    }
+    Event endOfLogging;
+    endOfLogging.setTimeInMinutes(900);
+    out.push_back(endOfLogging);
+
+    TimeStamp a;
+    TimeStamp b;
+    for (int i = 0; i < in.size(); i++)
+    {
+        a.setTimeInMinutes(in[i].getTimeInMinutes());
+        b.setTimeInMinutes(out[i].getTimeInMinutes());
+        totalTimeIn.setTimeInMinutes(totalTimeIn.getTimeInMinutes() + a.calculateTimeElapsed(&b).getTimeInMinutes());
+    }
+
+    return totalTimeIn;
+}
